@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compressor Power Statistics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label, input, select, button {
+            width: 100%;
+            margin-bottom: 0px;
+        }
+        input[type="number"], select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+
+        }
+        input[type="number"] {
+            padding-right: 0px;
+            width: inherit;
+        }
+        /* make select fields take up same space as number fields */
+        .fit-select {
+            width: inherit;
+        }
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .add-button.unlocked {
+            background-color: #007BFF;
+        }
+        .add-button.upgrade-button {
+            background-color: #08f35e;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        .user-input {
+            background-color: #ffffcc; /* same light yellow as the excel file */
+        }
+
+        .output {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: auto;
+        }
+        .warning {
+            color: red;
+        }
+
+        /* specifics for gas comp table */
+        /*
+        #compountEntries {
+            width: 50%
+        }*/
+        #compoundEntries input{
+            width: 95%;
+        }
+        .compound-selector {
+            display: flex;
+        }
+        /* move text from input closer to % sign */
+        .compound-frac-input {
+            text-align: right;
+            /* uncomment this to make % signs appear inside the number field, but you have to do something about the number spin
+            margin-right: -20px;
+            */
+        }
+        /* grey out remove button when it's effect is soft-disabled */
+        .no-remove {
+            background-color: #7ccdff
+        }
+        .compound-selector select {
+            width: 150%;
+        }
+        .compound-selector button {
+            width: 50%;
+        }
+        /* no longer used, since last compound input isn't frozen and isn't in the last row anyways
+        #compoundEntries tr:last-child input {
+            background-color: lightgray;
+        }*/
+        .percent-toggleable-input {
+            display: flex;
+        }
+        /* style for potential button that isn't there at the moment, which could toggle between % and decimal inputs  */
+        .toggle-percent {
+            background-color: green;
+            width: 30%;
+        }
+        /* make percent sign next to input up with input text */
+        .percent-toggleable-input span {
+            text-align: center;
+            line-height: 20px;
+            vertical-align: text-bottom;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Compressor Power Statistics</h1>
+    <form id="compressorForm">
+        <div class="form-group">
+            <label for="suctionPressure">Suction Pressure (psia):</label>
+            <input class="user-input no-negative" type="number" id="suctionPressure" name="suctionPressure" value=20 required>
+        </div>
+        <div class="form-group">
+            <label for="suctionTemperature">Suction Temperature (°F):</label>
+            <input type="number" class="user-input" id="suctionTemperature" name="suctionTemperature" value=50 required>
+        </div>
+        <div class="form-group">
+            <label for="flowRate">Flow Rate:</label>
+            <input type="number" class="user-input no-negative" id="flowRate" name="flowRate" value=50 required>
+        </div>
+        <div class="form-group">
+            <label for="flowRateUnit">Flow Rate Unit:</label>
+            <select class="user-input fit-select" id="flowRateUnit" name="flowRateUnit">
+                <option value="mmscfd">Million Standard Cubic Feet per Day (mmscfd)</option>
+                <option value="scfh">Standard Cubic Feet per Hour (scfh)</option>
+                <option value="scfm">Standard Cubic Feet per Minute (scfm)</option>
+                <option value="Nm3/h">Normal Cubic Meters per Hour (Nm3/h)</option>
+                <option value="kscfh">Thousand Cubic Feet per Hour (kscfh)</option>
+                <option value="kg/sec">Kilograms per Second (kg/sec)</option>
+                <option value="kg/h">Kilograms per Hour (kg/h)</option>
+                <option value="lb/h">Pounds per Hour (lb/h)</option>
+                <option value="stpd">Short Tons per Day (stpd)</option>
+                <option value="te/d">Tonnes per Day (te/d)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="dischargePressure">Discharge Pressure (psia):</label>
+            <input type="number" class="user-input no-negative" id="dischargePressure" name="dischargePressure" value=380 required>
+        </div>
+        <div class="form-group">
+            <label for="numberOfStages">Number of Stages:</label>
+            <input type="number" class="user-input no-negative" id="numberOfStages" name="numberOfStages" min="1" value=3 required>
+        </div>
+        <div class="form-group">
+            <label for="compressorType">Compressor Type:</label>
+            <select class="user-input fit-select" id="compressorType" name="compressorType">
+                <option value="reciprocating">Reciprocating</option>
+                <option value="centrifugal">Centrifugal</option>
+                <option value="diaphragm">Diaphragm</option>
+                <option value="oil-flooded screw">Oil-flooded Screw</option>
+                <option value="blower">Blower</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="intercoolerTemperature">Intercooler Temperature (°F):</label>
+            <input type="number" class="user-input" id="intercoolerTemperature" name="intercoolerTemperature" value=150 required>
+        </div>
+        <div class="form-group">
+            <label for="compressibility">Compressibility:</label>
+            <input type="number" class="user-input no-negative" id="compressibility" name="compressibility" step="any" value=1 required>
+        </div>
+        <div class="form-group">
+            <label for="motorEfficiency">Motor Efficiency (%):</label>
+            <!--div class="percent-toggleable-input"-->
+                <input type="number" class="user-input no-negative" id="motorEfficiency" name="motorEfficiency" step="0.001" value=98.5 min="0" max="100" required>
+                <!--span>%</span-->
+            <!--/div-->
+        </div>
+        <div class="form-group">
+            <label for="coolingWaterRise">Cooling Water Rise (°F):</label>
+            <input type="number" class="user-input no-negative" id="coolingWaterRise" name="coolingWaterRise" value=15 required>
+        </div>
+
+        <div class="form-group" style="grid-column: 1 / -1; width: 50%; justify-self: center;">
+            <h2>Gas Composition</h2>
+            <table id="compoundEntries">
+                <!--colgroup>
+                    <col span="1" style="width: 15%;">
+                    <col span="1" style="width: 15%;">
+                    <col span="1" style="width: 45%;">
+                    <col span="1" style="width: 15%;">
+                 </colgroup-->
+                <tr>
+                    <th>Compound</th>
+                    <th>Mole %</th>
+                    <th>Ratio of Specific Heats</th>
+                    <th>Molecular Weight</th>
+                </tr>
+                <tr>
+                    <td class="compound-selector">
+                        <select class="user-input" name="compound1">
+                            <option value="hydrogen">Hydrogen</option>
+                            <option value="carbon dioxide">Carbon Dioxide</option>
+                            <option value="nitrogen">Nitrogen</option>
+                            <option value="carbon monoxide">Carbon Monoxide</option>
+                            <option value="air, standard">Air, Standard</option>
+                            <option value="methane">Methane</option>
+                            <option value="water">Water</option>
+                            <option value="ammonia">Ammonia</option>
+                        </select>
+                        <button class="remove-compound" type="button" onclick="//removeCompound(this)">Remove</button>
+                    </td>
+                    <td>
+                        <div class="percent-toggleable-input">
+                            <input type="number" class="compound-frac-input user-input no-negative" name="fraction1" step="0.001" value=50 required>
+                            <span>%</span>
+                        </div>
+                    </td>
+                    <td><p class="row-specific-heat">test</p></td>
+                    <td><p class="row-molecular-weight"></p></td>
+                </tr>
+                <tr>
+                    <td class="compound-selector">
+                        <select class="user-input" name="compound2">
+                            <option value="nitrogen">Nitrogen</option>
+                            <option value="carbon dioxide">Carbon Dioxide</option>
+                            <option value="hydrogen">Hydrogen</option>
+                            <option value="carbon monoxide">Carbon Monoxide</option>
+                            <option value="air, standard">Air, Standard</option>
+                            <option value="methane">Methane</option>
+                            <option value="water">Water</option>
+                            <option value="ammonia">Ammonia</option>
+                        </select>
+                        <button class="remove-compound" type="button" onclick="//removeCompound(this)">Remove</button>
+                    </td>
+                    <td>
+                        <div class="percent-toggleable-input">
+                            <input type="number" class="compound-frac-input user-input no-negative" name="fraction2" step="0.001" value=35 required>
+                            <span>%</span>
+                        </div>
+                    </td>
+                    <td><p class="row-specific-heat">test</p></td>
+                    <td><p class="row-molecular-weight"></p></td>
+                </tr>
+                <tr>
+                    <td class="compound-selector">
+                        <select class="user-input" name="compound3">
+                            <option value="methane">Methane</option>
+                            <option value="carbon dioxide">Carbon Dioxide</option>
+                            <option value="hydrogen">Hydrogen</option>
+                            <option value="nitrogen">Nitrogen</option>
+                            <option value="carbon monoxide">Carbon Monoxide</option>
+                            <option value="air, standard">Air, Standard</option>
+                            <option value="water">Water</option>
+                            <option value="ammonia">Ammonia</option>
+                        </select>
+                        <button class="remove-compound" type="button" onclick="//removeCompound(this)">Remove</button>
+                    </td>
+                    <td>
+                        <div class="percent-toggleable-input">
+                            <input type="number" class="compound-frac-input user-input no-negative" name="fraction3" step="0.001" value=15 required>
+                            <span>%</span>
+                            <!--button class="toggle-percent">%</button-->
+                            <!--input type="checkbox" class="toggle-percent"-->
+                        </div>
+                    </td>
+                    <td><p class="row-specific-heat">test</p></td>
+                    <td><p class="row-molecular-weight"></p></td>
+                </tr>
+                <!--tr>
+                    <td colspan="1"></td>
+                    <td><p id="total-comp">100%</p></td>
+                    <td><p id="avg-specific-heat"></p></td>
+                    <td><p id="avg-molecular-weight"></p></td>
+                </tr-->
+            </table>
+            <button type="button" onclick="//addCompound()" id="add-button" class="add-button">Add Compound</button>
+        </div>
+        <button type="submit" style="grid-column: 1 / -1; width: 50%; justify-self: center;">Calculate</button>
+    </form>
+
+    <h2>Compression Stages Results</h2>
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>Stage Number</th>
+                <th>Suction Temperature (°F)</th>
+                <th>Suction Temperature (°K)</th>
+                <th>Suction Pressure (psia)</th>
+                <th>Discharge Pressure (psia)</th>
+                <th>Discharge Temperature (°K)</th>
+                <th>Discharge Temperature (°F)</th>
+                <th>Gas Duty (kW)</th>
+                <th>Absorbed Duty (kW)</th>
+                <th>Absorbed Duty (HP)</th>
+                <th>Temperature Rise (°F)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be added dynamically based on number of stages -->
+        </tbody>
+    </table>
+
+    <div class="output">
+        <h3>Total Power Required:</h3>
+        <p><strong>HP:</strong> <span id="totalPowerHP"></span></p>
+        <p><strong>kW:</strong> <span id="totalPowerKW"></span></p>
+        <h3>Compressor Statistics:</h3>
+        <p><strong>Inlet Losses:</strong> <span id="inletLosses"></span></p>
+        <p><strong>Intercooler/Aftercooler Losses</strong> <span id="coolerDP"></span></p>
+        <p><strong>Flow Rate:</strong> <span id="flowRateText"></span></p>
+        <p><strong>Specific Heat:</strong> <span id="specificHeat"></span></p>
+        <p><strong>Molecular Weight:</strong> <span id="molecularWeight"></span></p>
+        <p><strong>Nominal Stage Compression Ratio:</strong> <span id="stageCompressionRatio"></span></p>
+        <p><strong>Compressor Efficiency:</strong> <span id="compressorEfficiency"></span></p>
+        <p class="warning" id="discharge-temp-warning"></p>
+        <p class="warning" id="temp-rise-warning"></p>
+
+    </div>
+    <script>
+        /*
+        const parseFloatDefault = (str, ifNaN) => isNaN(parseFloat(str)) ? ifNaN : parseFloat(str)
+
+        const sumFracInputs = (inputArray) => inputArray.map(input => parseFloatDefault(input.value, 0)).reduce((a, b) => a + b)
+
+        const updateLastCompoundFracInput = () => {
+            const inputs = document.querySelectorAll('#compoundEntries .compound-frac-input')
+            const sum = sumFracInputs(Array(...inputs).slice(0, -1))
+            if (sum <= 1) {
+                inputs[inputs.length - 1].value = Math.round((1 - sum) * 1000) / 1000
+            } else {
+                let index = inputs.length - 1
+                inputs[index].value = 0
+
+                while (sumFracInputs(Array(...inputs).slice(0, index)) > 1) {
+                    index--
+                    inputs[index].value = 0
+                }
+                inputs[index].value = Math.round((1 - sumFracInputs(Array(...inputs).slice(0, index))) * 1000) / 1000
+            }
+        }
+
+        // make all compound % inputs update the last one to set the sum equal to zero
+        Array(...document.querySelectorAll('.compound-frac-input'))
+            .forEach(input => {input.addEventListener('change', updateLastCompoundFracInput)})
+
+        function addCompound() {
+            const table = document.getElementById('compoundEntries');
+            const rowCount = table.rows.length - 1; // number of compounds, not literal number of table rows
+            if (rowCount < 3) {
+                // unlock previous last row's mol %
+                const lastCompoundFraction = table.querySelector('tr:last-child input').disabled = false
+
+                const row = table.insertRow(rowCount + 1);
+
+                const cell1 = row.insertCell(0);
+                cell1.classList.add('compound-selector')
+                const select = document.createElement('select');
+                select.name = `compound${rowCount + 1}`;
+                select.innerHTML = `
+                    <option value="hydrogen">Hydrogen</option>
+                    <option value="carbon dioxide">Carbon Dioxide</option>
+                    <option value="nitrogen">Nitrogen</option>
+                    <option value="carbon monoxide">Carbon Monoxide</option>
+                    <option value="air, standard">Air, Standard</option>
+                    <option value="methane">Methane</option>
+                    <option value="water">Water</option>
+                    <option value="ammonia">Ammonia</option>
+                `;
+                cell1.appendChild(select);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = 'Remove';
+                button.onclick = function () { removeCompound(button); };
+                cell1.appendChild(button)
+
+                const cell2 = row.insertCell(1);
+                const input = document.createElement('input');
+                // normalize compound mol % (sum = 1)
+                input.disabled = true
+                input.value = 0
+
+                input.classList.add('compound-frac-input')
+                input.type = 'number';
+                input.name = `fraction${rowCount + 1}`;
+                input.step = '0.001';
+                input.required = true;
+                input.addEventListener('change', updateLastCompoundFracInput)
+                cell2.appendChild(input);
+
+                const cell3 = row.insertCell(2);
+                const specificHeatText = document.createElement('p')
+                cell3.appendChild(specificHeatText)
+
+                const cell4 = row.insertCell(3)
+                const molWeightText = document.createElement('p')
+                cell4.appendChild(molWeightText)
+            }
+            if (rowCount >= 2) {
+                document.getElementById('add-button').classList.add('upgrade-button')
+                //document.getElementById('add-button').classList.remove('unlocked')
+            }
+        }
+
+        function removeCompound(button) {
+            const row = button.parentNode.parentNode;
+            const rowCount = row.parentNode.rows.length - 2
+            row.parentNode.removeChild(row);
+            if (rowCount < 3) {
+                document.getElementById('add-button').classList.remove('upgrade-button')
+                //document.getElementById('add-button').classList.add('unlocked')
+            }
+
+            // lock last row's mol %
+            const lastCompoundFraction = document.querySelector('#compoundEntries tr:last-child input')
+            lastCompoundFraction.disabled = true
+            lastCompoundFraction.value = Math.round(1000 * (1 - (Array(...document.querySelectorAll('#compoundEntries .compound-frac-input')).map(input => parseFloatDefault(input.value, 0))
+            .reduce((a, b) => a + b) - parseFloatDefault(lastCompoundFraction.value, 0)))) / 1000
+        }
+            */
+    </script>
+    <script src="compressorCalculator.js"></script>
+</body>
+</html>
